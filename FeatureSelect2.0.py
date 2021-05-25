@@ -83,7 +83,7 @@ def FeatureSelection(data=None, mode=None, debug=None):
             currentFeatureSet.add(feature2AddAtCurrentLevel)
             if i < data.shape[1] - 1:
                 print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(bestSoFarAccuracy*100, 3)}%\n')
-    print(f'\nFinished search! The best feature subset is {bestOverall}, yeilding an accuracy of {round(globalBest*100, 3)}%.')
+    print(f'\nFinished search! The best feature subset is {bestOverall}, yielding an accuracy of {round(globalBest*100, 3)}%.')
     return bestOverall
 
 def CLI():
