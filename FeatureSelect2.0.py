@@ -52,12 +52,13 @@ def FeatureSelection(data=None, mode=None, debug=None):
     levelBest:  np.double = 0.0
     # accuracies = list()
     for i in range(1, data.shape[1]):
+        accuracy: np.double = 0.0
         bestSoFarAccuracy: np.double = 0.0
         feature2AddAtCurrentLevel: int = -1
 
         for j in range(1, data.shape[1]):
             if j not in currentFeatureSet:
-                tempFeatureSet = currentFeatureSet
+                tempFeatureSet = set(currentFeatureSet)
                 tempFeatureSet.add(j)
                 print(f'\t\tUsing Features: {tempFeatureSet}')
                 zeroedFeatures = np.zeros(shape=(data.shape[0], data.shape[1]))
@@ -66,6 +67,7 @@ def FeatureSelection(data=None, mode=None, debug=None):
                                                         classes=data[:, 0].astype('int8'))
                 print(f'Accuracy is {round(accuracy*100, 3)}%')
                 # accuracies.append(accuracy)
+
             if accuracy > bestSoFarAccuracy:
                 bestSoFarAccuracy = accuracy
                 feature2AddAtCurrentLevel = j
@@ -73,7 +75,7 @@ def FeatureSelection(data=None, mode=None, debug=None):
             levelBest = bestSoFarAccuracy
             if globalBest < levelBest:
                 globalBest = levelBest
-                bestOverall = currentFeatureSet
+                bestOverall = set(currentFeatureSet)
                 bestOverall.add(feature2AddAtCurrentLevel)
         else:
             if i < data.shape[1] - 2:
@@ -81,7 +83,7 @@ def FeatureSelection(data=None, mode=None, debug=None):
         if feature2AddAtCurrentLevel not in currentFeatureSet:
             currentFeatureSet.add(feature2AddAtCurrentLevel)
             if i < data.shape[1] - 2:
-                print(f'Feature Set: {currentFeatureSet} was best, accuracy is {bestSoFarAccuracy*100}%\n')
+                print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(bestSoFarAccuracy*100, 3)}%\n')
     print(f'\nFinished search! The best feature subset is {bestOverall}, yeilding an accuracy of {globalBest*100}%.')
     return bestOverall
 
