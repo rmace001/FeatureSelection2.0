@@ -35,7 +35,8 @@ import numpy as np
 def leave1OutCrossVal(curData=None, classes=None):
     correct: np.double = 0
     dataReshaped = curData.reshape(curData.shape[0], 1, curData.shape[1])
-    distances = np.sqrt(np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped))
+    # distances = np.sqrt(np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped))
+    distances = np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped)
     for i in range(distances.shape[0]):
         currentRow = distances[i, :]
         indices = ((j, currentRow[j]) for j in range(currentRow.shape[0]))
@@ -61,10 +62,8 @@ def FeatureSelection(data=None, mode=None, debug=None):
                 tempFeatureSet = set(currentFeatureSet)
                 tempFeatureSet.add(j)
                 print(f'\t\tUsing Features: {tempFeatureSet}')
-                zeroedFeatures = np.zeros(shape=(data.shape[0], data.shape[1]))
-                zeroedFeatures[:, list(tempFeatureSet)] = data[:, list(tempFeatureSet)]
-                accuracy: np.double = leave1OutCrossVal(curData=zeroedFeatures[:, 1:],
-                                                        classes=data[:, 0].astype('int8'))
+                accuracy: np.double = leave1OutCrossVal(curData=data[:, list(tempFeatureSet)],
+                                                        classes=data[:, 0])
                 print(f'Accuracy is {round(accuracy*100, 3)}%')
                 # accuracies.append(accuracy)
 
@@ -78,13 +77,13 @@ def FeatureSelection(data=None, mode=None, debug=None):
                 bestOverall = set(currentFeatureSet)
                 bestOverall.add(feature2AddAtCurrentLevel)
         else:
-            if i < data.shape[1] - 2:
+            if i < data.shape[1] - 1:
                 print('(Warning, Accuracy has decreased! Continuing search in case of local maxima)')
         if feature2AddAtCurrentLevel not in currentFeatureSet:
             currentFeatureSet.add(feature2AddAtCurrentLevel)
-            if i < data.shape[1] - 2:
+            if i < data.shape[1] - 1:
                 print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(bestSoFarAccuracy*100, 3)}%\n')
-    print(f'\nFinished search! The best feature subset is {bestOverall}, yeilding an accuracy of {globalBest*100}%.')
+    print(f'\nFinished search! The best feature subset is {bestOverall}, yeilding an accuracy of {round(globalBest*100, 3)}%.')
     return bestOverall
 
 def CLI():
