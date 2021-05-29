@@ -134,7 +134,7 @@ def FeatureBackwardSelection(data=None, mode=None, debug=None):
             if globalBest < levelBest:
                 globalBest = levelBest
                 bestOverall = set(currentFeatureSet)
-                bestOverall.add(feature2RemoveAtCurrentLevel)
+                bestOverall.remove(feature2RemoveAtCurrentLevel)
         else:
             if i < data.shape[1] - 1:
                 print('(Warning, Accuracy has decreased! Continuing search in case of local maxima)')
@@ -142,6 +142,7 @@ def FeatureBackwardSelection(data=None, mode=None, debug=None):
             currentFeatureSet.remove(feature2RemoveAtCurrentLevel)
             if i < data.shape[1] - 1:
                 print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(bestSoFarAccuracy * 100, 3)}%\n')
+    # bestOverall = set(range(1, data.shape[1])) - bestOverall
     print(f'\nFinished search! The best feature subset is {bestOverall}, yielding an accuracy of {round(globalBest * 100, 3)}%.')
     return bestOverall
 
