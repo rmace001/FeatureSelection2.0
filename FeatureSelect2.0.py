@@ -36,7 +36,7 @@ def leave1OutCrossVal(curData=None, classes=None):
     correct: np.double = 0
     dataReshaped = curData.reshape(curData.shape[0], 1, curData.shape[1])
     # distances = np.sqrt(np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped))
-    distances = np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped)
+    distances = np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped)  # remove sqrt optimization
     for i in range(distances.shape[0]):
         currentRow = distances[i, :]
         indices = ((j, currentRow[j]) for j in range(currentRow.shape[0]))
@@ -86,6 +86,65 @@ def FeatureSelection(data=None, mode=None, debug=None):
     print(f'\nFinished search! The best feature subset is {bestOverall}, yielding an accuracy of {round(globalBest*100, 3)}%.')
     return bestOverall
 
+
+def FeatureBackwardSelection(data=None, mode=None, debug=None):
+    """
+    it may be eaiser to
+        - compute accuracy from using all features,
+        - set currentFeatureSet to all features,
+        - set bestOverall to all features,
+        - set globalBest to accuracy,
+        - set levelBest to accuracy
+        - then we can begin iterating and removing feature j each iteration
+        we can keep a log of which is best to remove at each level, and at the end we remove all features in removed set
+    :param data:
+    :param mode:
+    :param debug:
+    :return:
+    """
+
+    currentFeatureSet = set(range(1, data.shape[1]))
+    bestOverall = set(range(1, data.shape[1]))
+    globalBest: np.double = 0.0
+    levelBest: np.double = 0.0
+    print(f'\t\tUsing Features: {currentFeatureSet}')
+    accuracy = leave1OutCrossVal(curData=data[:, 1:data.shape[1] - 1], classes=data[:, 0])
+    print(f'Accuracy is {round(accuracy * 100, 3)}%')
+    globalBest = accuracy
+    levelBest = accuracy
+
+    for i in range(1, data.shape[1]):
+        # remove feature i
+        accuracy: np.double = 0.0
+        bestSoFarAccuracy: np.double = 0.0
+        feature2RemoveAtCurrentLevel: int = -1
+        for j in range(1, data.shape[1]):
+            if j in currentFeatureSet:
+                tempFeatureSet = set(currentFeatureSet)
+                tempFeatureSet.remove(j)
+                print(f'\t\tUsing Features: {tempFeatureSet}')
+                accuracy: np.double = leave1OutCrossVal(curData=data[:, list(tempFeatureSet)], classes=data[:, 0])
+                print(f'Accuracy is {round(accuracy * 100, 3)}%')
+            if accuracy > bestSoFarAccuracy:
+                bestSoFarAccuracy = accuracy
+                feature2RemoveAtCurrentLevel = j
+
+        if levelBest < bestSoFarAccuracy:
+            levelBest = bestSoFarAccuracy
+            if globalBest < levelBest:
+                globalBest = levelBest
+                bestOverall = set(currentFeatureSet)
+                bestOverall.add(feature2RemoveAtCurrentLevel)
+        else:
+            if i < data.shape[1] - 1:
+                print('(Warning, Accuracy has decreased! Continuing search in case of local maxima)')
+        if feature2RemoveAtCurrentLevel in currentFeatureSet:
+            currentFeatureSet.remove(feature2RemoveAtCurrentLevel)
+            if i < data.shape[1] - 1:
+                print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(bestSoFarAccuracy * 100, 3)}%\n')
+    print(f'\nFinished search! The best feature subset is {bestOverall}, yielding an accuracy of {round(globalBest * 100, 3)}%.')
+    return bestOverall
+
 def CLI():
     ##############################################
     # Main function, Options
@@ -129,11 +188,12 @@ def main(options=None):
     print('\t1) Forward Selection')
     print('\t2) Backward Selection')
     print('\t3) Rogelio\'s Special Search')
-
+    fileread = os.path.abspath(os.path.join(os.getcwd(), filename))
+    arr = np.loadtxt(fname=fileread)
     if options.mode == '1':
-        pass
+        bestFeatures = FeatureSelection(data=arr, mode=options.mode, debug=options.debug)
     elif options.mode == '2':
-        pass
+        bestFeatures = FeatureBackwardSelection(data=arr, mode=options.mode, debug=options.debug)
     elif options.mode == '3':
         pass
     else:
@@ -141,7 +201,6 @@ def main(options=None):
 
     print(f'Mode option chosen: {options.mode}')
 
-    fileread = os.path.abspath(os.path.join(os.getcwd(), filename))
     # lines = (line for line in open(fileread))
     # linesAsLists = (s.rstrip().split(' ') for s in lines)
     # lineSplits = (gen(filter(filterWhiteSpace, value)) for value in linesAsLists)
@@ -151,8 +210,7 @@ def main(options=None):
     #         pass
     #         print(feat)
     #         print(round(float(feat), 3))
-    arr = np.loadtxt(fname=fileread)
-    bestFeatures = FeatureSelection(data=arr, mode=options.mode, debug=options.debug)
+
     return
 
 
