@@ -30,6 +30,7 @@ import os
 import datetime
 import traceback
 import numpy as np
+import pandas as pd
 
 
 def leave1OutCrossVal(curData=None, classes=None):
@@ -148,19 +149,28 @@ def main(options=None):
     else:
         print(f'Invalid filesize chosen: {options.filesize}. Valid filesizes: [small | large]')
 
-    print(f'File to test: {filename}')
+    if options.mode != '3':
+        fileread = os.path.abspath(os.path.join(os.getcwd(), filename))
+        print(f'File to test: {filename}')
+        arr = np.loadtxt(fname=fileread)
+
     print('Algorithm options:')
     print('\t1) Forward Selection')
     print('\t2) Backward Selection')
-    print('\t3) Rogelio\'s Special Search')
-    fileread = os.path.abspath(os.path.join(os.getcwd(), filename))
-    arr = np.loadtxt(fname=fileread)
+    print('\t3) Forward Selection on Accent Classification')
     if options.mode == '1':
         bestFeatures = FeatureSelection(data=arr, debug=options.debug)
     elif options.mode == '2':
         bestFeatures = FeatureBackwardSelection(data=arr, debug=options.debug)
     elif options.mode == '3':
-        pass
+        mapping = {'ES': 1, 'FR': 2, 'GE': 3, 'IT': 4, 'UK': 5, 'US': 6}
+        table = pd.read_csv('accent-mfcc-data.csv')
+        for i in range(table.shape[0]):
+            table.loc[i, 'language'] = mapping[table.iloc[i][0]]
+        arr = table.values.astype(np.double)
+        del table
+        # bestFeatures = FeatureSelection(data=arr, debug=options.debug)
+        bestFeatures = FeatureBackwardSelection(data=arr, debug=options.debug)
     else:
         print(f'Invalid mode chosen: {options.mode}. Valid modes: [1 | 2 | 3]')
 
