@@ -31,31 +31,39 @@ import datetime
 import traceback
 import numpy as np
 import pandas as pd
+import math
 
 
 def leave1OutCrossVal(curData=None, classes=None):
     correct: np.double = 0
-    dataReshaped = curData.reshape(curData.shape[0], 1, curData.shape[1])
-    # distances = np.sqrt(np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped))
-    distances = np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped)  # remove sqrt optimization
+    dataReshaped       = curData.reshape(curData.shape[0], 1, curData.shape[1])
+
+    # distances        = np.sqrt(np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped))
+    distances          = np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped)  # remove sqrt optimization
+
     for i in range(distances.shape[0]):
-        currentRow = distances[i, :]
-        indices = ((j, currentRow[j]) for j in range(currentRow.shape[0]))
-        top = sorted(indices, key=lambda x: x[1])[1]
-        if classes[i] == classes[top[0]]:
+        currentRow     = distances[i, :]
+        indices        = ((j, currentRow[j]) for j in range(currentRow.shape[0]))
+        curmin         = (0, math.inf)
+
+        for item in indices:
+            if item[0] != i:
+                if item[1] < curmin[1]:
+                    curmin = item
+
+        if classes[i] == classes[curmin[0]]:
             correct += 1.0
     return correct/distances.shape[0]
 
 
 def FeatureSelection(data=None, debug=None):
-    currentFeatureSet = set()
-    bestOverall = set()
+    currentFeatureSet     = set()
+    bestOverall           = set()
     globalBest: np.double = 0.0
 
     for i in range(1, data.shape[1]):
-        bestSoFarAccuracy: np.double = 0.0
+        bestSoFarAccuracy: np.double   = 0.0
         feature2AddAtCurrentLevel: int = -1
-
         for j in range(1, data.shape[1]):
             if j not in currentFeatureSet:
                 tempFeatureSet = set(currentFeatureSet)
@@ -68,16 +76,14 @@ def FeatureSelection(data=None, debug=None):
                     bestSoFarAccuracy = accuracy
                     feature2AddAtCurrentLevel = j
 
-        if feature2AddAtCurrentLevel not in currentFeatureSet:
-            currentFeatureSet.add(feature2AddAtCurrentLevel)
-            print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(bestSoFarAccuracy*100, 3)}%\n')
+        currentFeatureSet.add(feature2AddAtCurrentLevel)
+        print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(bestSoFarAccuracy*100, 3)}%\n')
 
         if globalBest < bestSoFarAccuracy:
-            globalBest = bestSoFarAccuracy
+            globalBest  = bestSoFarAccuracy
             bestOverall = set(currentFeatureSet)
         else:
-            if i < data.shape[1] - 1:
-                print('(WARNING: Accuracy has decreased! Continuing search in case of local maxima)\n')
+            print('(WARNING: Accuracy has decreased! Continuing search in case of local maxima)\n')
 
     print(f'\nFinished search! The best feature subset is {bestOverall}, yielding an accuracy of {round(globalBest*100, 3)}%.')
     return bestOverall
@@ -119,6 +125,7 @@ def FeatureBackwardSelection(data=None, debug=None):
     print(f'\nFinished search! The best feature subset is {bestOverall}, yielding an accuracy of {round(globalBest * 100, 3)}%.')
     return bestOverall
 
+
 def CLI():
     ##############################################
     # Main function, Options
@@ -128,7 +135,7 @@ def CLI():
                       help='Show command execution example.')
     parser.add_option("--debug", action='store_true', dest='debug', default=True, help='Debug mode.')
     parser.add_option("--filesize", dest='filesize', default='small', help="Operate on \'small\' or \'large\' dataset")  # 'small dataset'
-    parser.add_option("--mode", dest='mode', default='1', help="1: Foward Search, 2: Backward Search, 3: Rogelio\'s Special Search")
+    parser.add_option("--mode", dest='mode', default='1', help="1: Forward Search, 2: Backward Search, 3: Special Search on Language-accent Classification")
     (options, args) = parser.parse_args()
     try:
         main(options=options)
@@ -138,18 +145,16 @@ def CLI():
     return
 
 
-
 def main(options=None):
     print("Welcome to Rogelio\'s Feature Selection Algorithm.")
-
-    if str.lower(options.filesize) == 'small':
-        filename = 'CS205_small_testdata__37.txt'
-    elif str.lower(options.filesize) == 'large':
-        filename = 'CS205_large_testdata__4.txt'
-    else:
-        print(f'Invalid filesize chosen: {options.filesize}. Valid filesizes: [small | large]')
-
-    if options.mode != '3':
+    if options.mode == '1' or options.mode == '2':
+        if str.lower(options.filesize) == 'small':
+            filename = 'CS205_small_testdata__37.txt'
+        elif str.lower(options.filesize) == 'large':
+            filename = 'CS205_large_testdata__4.txt'
+        else:
+            print(f'Invalid filesize chosen: {options.filesize}. Valid filesizes: [small | large]')
+            return
         fileread = os.path.abspath(os.path.join(os.getcwd(), filename))
         print(f'File to test: {filename}')
         arr = np.loadtxt(fname=fileread)
@@ -176,7 +181,6 @@ def main(options=None):
 
     print(f'Mode option chosen: {options.mode}')
     return
-
 
 
 if __name__ == "__main__":
