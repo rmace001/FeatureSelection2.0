@@ -95,32 +95,30 @@ def FeatureBackwardSelection(data=None, debug=None):
     print(f'\t\tUsing Features: {currentFeatureSet}')
     globalBest: np.double = leave1OutCrossVal(curData=data[:, 1:data.shape[1] - 1], classes=data[:, 0])
     print(f'Accuracy is {round(globalBest * 100, 3)}%')
-
+    print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(globalBest * 100, 3)}%\n')
     for i in range(1, data.shape[1]):
         bestSoFarAccuracy: np.double = 0.0
         feature2RemoveAtCurrentLevel: int = -1
 
         for j in range(1, data.shape[1]):
             if j in currentFeatureSet:
-                tempFeatureSet = set(currentFeatureSet)
-                tempFeatureSet.remove(j)
-                print(f'\t\tUsing Features: {tempFeatureSet}')
+                tempFeatureSet = set(currentFeatureSet) - {j}
+                # print(f'\t\tUsing Features: {tempFeatureSet}')
                 accuracy: np.double = leave1OutCrossVal(curData=data[:, list(tempFeatureSet)], classes=data[:, 0])
                 print(f'Accuracy is {round(accuracy * 100, 3)}%')
 
-            if accuracy > bestSoFarAccuracy:
-                bestSoFarAccuracy = accuracy
-                feature2RemoveAtCurrentLevel = j
+                if accuracy > bestSoFarAccuracy:
+                    bestSoFarAccuracy = accuracy
+                    feature2RemoveAtCurrentLevel = j
 
-        if feature2RemoveAtCurrentLevel in currentFeatureSet:
-            currentFeatureSet.remove(feature2RemoveAtCurrentLevel)
-            print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(bestSoFarAccuracy * 100, 3)}%\n')
+        currentFeatureSet.remove(feature2RemoveAtCurrentLevel)
+        print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(bestSoFarAccuracy * 100, 3)}%\n')
+
         if globalBest < bestSoFarAccuracy:
             globalBest = bestSoFarAccuracy
             bestOverall = set(currentFeatureSet)
         else:
-            if i < data.shape[1] - 1:
-                print('(Warning, Accuracy has decreased! Continuing search in case of local maxima)')
+            print('(Warning, Accuracy has decreased! Continuing search in case of local maxima)')
 
     print(f'\nFinished search! The best feature subset is {bestOverall}, yielding an accuracy of {round(globalBest * 100, 3)}%.')
     return bestOverall
