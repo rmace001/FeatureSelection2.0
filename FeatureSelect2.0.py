@@ -8,23 +8,15 @@
 # *****************************************************************************/
 
 """
-Resources
-- https://numpy.org/doc/stable/reference/generated/numpy.loadtxt.html
-- https://stackoverflow.com/questions/455612/limiting-floats-to-two-decimal-points
-- https://www.geeksforgeeks.org/filter-in-python/
-- https://www.programiz.com/python-programming/generator
-- https://github.com/rmace001/Feature-Selection/
-- https://stackoverflow.com/questions/43367001/how-to-calculate-euclidean-distance-between-pair-of-rows-of-a-numpy-array
 
 Usage: $: python3 FeatureSelect2.0.py --filesize small --mode 1 --debug
 Args:
-    --filesize: ['small' | 'large']
+    --filesize: ['small' | 'large' | 'None']
     --mode: [1 | 2 | 3]
     --debug: stores True
+
 """
 
-
-import json
 import optparse
 import os
 import datetime
@@ -38,8 +30,8 @@ def leave1OutCrossVal(curData=None, classes=None):
     correct: np.double = 0
     dataReshaped       = curData.reshape(curData.shape[0], 1, curData.shape[1])
 
-    # distances        = np.sqrt(np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped))
-    distances          = np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped)  # remove sqrt optimization
+    #                    omit sqrt operation to optimize distance calculation
+    distances          = np.einsum('ijk, ijk->ij', curData-dataReshaped, curData-dataReshaped)
 
     for i in range(distances.shape[0]):
         currentRow     = distances[i, :]
@@ -93,7 +85,7 @@ def FeatureBackwardSelection(data=None, debug=None):
     currentFeatureSet = set(range(1, data.shape[1]))
     bestOverall = set(range(1, data.shape[1]))
     print(f'\t\tUsing Features: {currentFeatureSet}')
-    globalBest: np.double = leave1OutCrossVal(curData=data[:, 1:data.shape[1] - 1], classes=data[:, 0])
+    globalBest: np.double = leave1OutCrossVal(curData=data[:, list(currentFeatureSet)], classes=data[:, 0])
     print(f'Accuracy is {round(globalBest * 100, 3)}%')
     print(f'Feature Set: {currentFeatureSet} was best, accuracy is {round(globalBest * 100, 3)}%\n')
     for i in range(1, data.shape[1]):
@@ -166,7 +158,8 @@ def main(options=None):
     elif options.mode == '2':
         bestFeatures = FeatureBackwardSelection(data=arr, debug=options.debug)
     elif options.mode == '3':
-        mapping = {'ES': 1, 'FR': 2, 'GE': 3, 'IT': 4, 'UK': 5, 'US': 6}
+        # mapping = {'ES': 1, 'FR': 2, 'GE': 3, 'IT': 4, 'UK': 5, 'US': 6}
+        mapping = {'ES': 2, 'FR': 2, 'GE': 2, 'IT': 2, 'UK': 2, 'US': 1}
         table = pd.read_csv('accent-mfcc-data.csv')
         for i in range(table.shape[0]):
             table.loc[i, 'language'] = mapping[table.iloc[i][0]]
